@@ -1,16 +1,7 @@
-# 忽略 SQLite 資料庫檔案
 *.db
 *.db-journal
-
-# 忽略從 GitHub 下載的巨大 CVE 原始 JSON 資料夾
 cves/
 cvelistV5/
-
-# 忽略失敗清單與日誌
 failed_cves.txt
-mistake_report.md
-mistake.md
-
-# 忽略 Python 快取
 __pycache__/
 *.pyc

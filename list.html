@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CVE 安全漏洞清單 - 企業級資安平台</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 讓直書標籤呈現標準的垂直排列 */
+        .vertical-text {
+            writing-mode: vertical-lr;
+            text-combine-upright: digits 4;
+            letter-spacing: 0.2em;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
+
+    <header class="bg-slate-800/80 backdrop-blur border-b border-slate-700 sticky top-0 z-50 px-6 py-4 shadow-lg">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-shield-halved text-emerald-400 text-2xl"></i>
+                <h1 class="text-xl font-bold tracking-wider text-slate-100">CVE 資料庫檢索系統</h1>
+            </div>
+            
+            <div class="flex-1 max-w-2xl relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="topKeyword" placeholder="全域嚴格搜尋 (例如: chrome, windows... 支援大小寫不限)" 
+                       class="w-full pl-11 pr-4 py-2.5 bg-slate-950/60 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-sm">
+            </div>
+
+            <div class="flex items-center gap-2 text-xs text-slate-400 bg-slate-950/40 px-3 py-1.5 rounded-full border border-slate-700/60">
+                <span class="w-2 height-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                系統連線正常
+            </div>
+        </div>
+    </header>
+
+    <div class="flex relative min-h-[calc(screen-112px)] overflow-x-hidden">
+        
+        <aside id="filterSidebar" class="w-80 bg-slate-800 border-r border-slate-700 p-6 flex flex-col gap-6 shrink-0 transform translate-x-0 transition-transform duration-300 ease-in-out relative z-40 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                <h2 class="text-md font-bold tracking-wide text-emerald-400 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i> 進階進階條件篩選
+                </h2>
+                <button onclick="clearFilters()" class="text-xs text-slate-400 hover:text-emerald-400 transition-colors">
+                    清除條件
+                </button>
+            </div>
+
+            <div class="flex flex-col gap-5 text-sm">
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">CVE ID</label>
+                    <div class="flex items-center gap-1.5 bg-slate-950/40 border border-slate-600 rounded-lg px-3 py-2 text-slate-300 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500 transition-all">
+                        <span class="font-mono text-slate-400 select-none">CVE-</span>
+                        <input type="text" id="cveYear" placeholder="2024" class="w-16 bg-transparent text-center font-mono focus:outline-none placeholder-slate-600 border-b border-slate-700 focus:border-emerald-500" maxlength="4">
+                        <span class="text-slate-600 font-mono">-</span>
+                        <input type="text" id="cveSeq" placeholder="0001" class="w-full bg-transparent font-mono focus:outline-none placeholder-slate-600 border-b border-slate-700 focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">風險等級</label>
+                    <select id="riskLevel" class="w-full bg-slate-950/40 border border-slate-600 rounded-lg px-3 py-2 text-slate-300 focus:outline-none focus:border-emerald-500 transition-all cursor-pointer">
+                        <option value="" class="bg-slate-800">全部等級 (All Levels)</option>
+                        <option value="CRITICAL" class="bg-slate-800 text-red-400">Critical (危急)</option>
+                        <option value="HIGH" class="bg-slate-800 text-orange-400">High (高風險)</option>
+                        <option value="MEDIUM" class="bg-slate-800 text-yellow-400">Medium (中風險)</option>
+                        <option value="LOW" class="bg-slate-800 text-sky-400">Low (低風險)</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">廠商</label>
+                    <input type="text" id="vendorInput" placeholder="例如: Microsoft, Apple..." 
+                           class="w-full bg-slate-950/40 border border-slate-600 rounded-lg px-3 py-2 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-all">
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">軟體</label>
+                    <input type="text" id="productInput" placeholder="例如: Windows 11, Office..." 
+                           class="w-full bg-slate-950/40 border border-slate-600 rounded-lg px-3 py-2 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-all">
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">敘述關鍵字</label>
+                    <input type="text" id="descKeyword" placeholder="輸入描述中包含的特定字詞..." 
+                           class="w-full bg-slate-950/40 border border-slate-600 rounded-lg px-3 py-2 text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-all">
+                </div>
+
+                <button onclick="triggerSearch()" class="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-lg shadow-lg hover:shadow-emerald-900/30 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-magnifying-glass"></i> 執行條件檢索
+                </button>
+            </div>
+        </aside>
+
+        <button onclick="toggleSidebar()" class="absolute left-80 top-24 -translate-x-0 z-50 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-4 px-2 rounded-r-lg shadow-xl border-y border-r border-emerald-500/30 transition-all duration-300 ease-in-out cursor-pointer flex flex-col items-center gap-1" id="toggleBtn">
+            <i class="fa-solid fa-chevron-left text-[10px]" id="toggleIcon"></i>
+            <span class="vertical-text">篩選條件</span>
+        </button>
+
+        <main class="flex-1 p-8 transition-all duration-300" id="mainContent">
+            <div class="max-w-7xl mx-auto flex flex-col gap-6">
+                
+                <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-800/40 p-4 rounded-xl border border-slate-700/50">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-200">資安弱點檢索結果清單</h2>
+                        <p class="text-xs text-slate-400 mt-1">此處為嚴格查詢模式，結果依據資料庫異動時間進行排序</p>
+                    </div>
+                    <div class="text-sm bg-slate-950/40 px-4 py-2 rounded-lg border border-slate-700">
+                        目前回傳筆數：<span class="text-emerald-400 font-bold font-mono" id="resultCount">0</span> 筆
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 rounded-xl border border-slate-700 shadow-xl overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-950/50 text-slate-400 text-xs font-semibold tracking-wider border-b border-slate-700 uppercase">
+                                    <th class="py-4 px-5">CVE ID</th>
+                                    <th class="py-4 px-5">廠商 / 產品</th>
+                                    <th class="py-4 px-5">CVSS 分數</th>
+                                    <th class="py-4 px-5">風險等級</th>
+                                    <th class="py-4 px-5 w-1/3">漏洞描述摘要</th>
+                                    <th class="py-4 px-5">更新時間</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cveTableBody" class="divide-y divide-slate-700/60 text-sm text-slate-300">
+                                <tr>
+                                    <td colspan="6" class="py-12 text-center text-slate-500">
+                                        <i class="fa-solid fa-circle-notch animate-spin text-xl text-emerald-500 mb-2 block"></i>
+                                        資料載入中，請稍候...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let sidebarOpen = true;
+
+        // 側邊欄收放切換控制
+        function toggleSidebar() {
+            const sidebar = document.getElementById('filterSidebar');
+            const toggleBtn = document.getElementById('toggleBtn');
+            const toggleIcon = document.getElementById('toggleIcon');
+            const mainContent = document.getElementById('mainContent');
+
+            if (sidebarOpen) {
+                // 執行縮回、隱藏
+                sidebar.style.transform = 'translateX(-100%)';
+                sidebar.style.marginRight = '-20rem'; // -80px 的寬度
+                toggleBtn.style.left = '0px';
+                toggleIcon.className = 'fa-solid fa-chevron-right text-[10px]';
+            } else {
+                // 執行展開、呈現
+                sidebar.style.transform = 'translateX(0)';
+                sidebar.style.marginRight = '0';
+                toggleBtn.style.left = '20rem'; // 80px 的寬度
+                toggleIcon.className = 'fa-solid fa-chevron-left text-[10px]';
+            }
+            sidebarOpen = !sidebarOpen;
+        }
+
+        // 清除所有篩選條件
+        function clearFilters() {
+            document.getElementById('cveYear').value = '';
+            document.getElementById('cveSeq').value = '';
+            document.getElementById('riskLevel').value = '';
+            document.getElementById('vendorInput').value = '';
+            document.getElementById('productInput').value = '';
+            document.getElementById('descKeyword').value = '';
+            document.getElementById('topKeyword').value = '';
+            triggerSearch();
+        }
+
+        // 發送 API 請求抓取後端資料
+        function triggerSearch() {
+            const tableBody = document.getElementById('cveTableBody');
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="py-12 text-center text-slate-500">
+                        <i class="fa-solid fa-circle-notch animate-spin text-xl text-emerald-500 mb-2 block"></i>
+                        正在動態比對資料庫...
+                    </td>
+                </tr>
+            `;
+
+            // 組裝複合 CVE ID
+            const year = document.getElementById('cveYear').value.trim();
+            const seq = document.getElementById('cveSeq').value.trim();
+            let fullCveId = '';
+            if (year || seq) {
+                fullCveId = `CVE-${year || '%'}-${seq || '%'}`;
+            }
+
+            // 建立查詢參數
+            const params = new URLSearchParams({
+                top_q: document.getElementById('topKeyword').value.trim(),
+                cve_id: fullCveId,
+                risk: document.getElementById('riskLevel').value,
+                vendor: document.getElementById('vendorInput').value.trim(),
+                product: document.getElementById('productInput').value.trim(),
+                desc: document.getElementById('descKeyword').value.trim()
+            });
+
+            // 向後端 API 發送請求
+            fetch(`/api/search-advanced?${params.toString()}`)
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('resultCount').innerText = data.length;
+                    
+                    if(data.length === 0) {
+                        tableBody.innerHTML = `
+                            <tr>
+                                <td colspan="6" class="py-12 text-center text-slate-500">
+                                    <i class="fa-solid fa-triangle-exclamation text-xl text-amber-500 mb-2 block"></i>
+                                    查無符合條件的 CVE 資安紀錄，請試著放寬條件。
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+
+                    // 渲染表格內容
+                    tableBody.innerHTML = data.map(item => {
+                        let badgeColor = 'bg-slate-700 text-slate-300';
+                        let riskText = item.risk_level || 'UNKNOWN';
+                        
+                        if (riskText === 'CRITICAL') badgeColor = 'bg-red-500/20 text-red-400 border border-red-500/30';
+                        else if (riskText === 'HIGH') badgeColor = 'bg-orange-500/20 text-orange-400 border border-orange-500/30';
+                        else if (riskText === 'MEDIUM') badgeColor = 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30';
+                        else if (riskText === 'LOW') badgeColor = 'bg-sky-500/20 text-sky-400 border border-sky-500/30';
+
+                        return `
+                            <tr class="hover:bg-slate-800/60 transition-colors">
+                                <td class="py-4 px-5 font-mono font-bold text-emerald-400">${item.cve_id}</td>
+                                <td class="py-4 px-5">
+                                    <div class="font-medium text-slate-200">${item.vendor || '<i class="text-slate-600">未指定</i>'}</div>
+                                    <div class="text-xs text-slate-400">${item.product || '-'}</div>
+                                </td>
+                                <td class="py-4 px-5 font-mono text-slate-200">${item.cvss_score !== null ? item.cvss_score.toFixed(1) : '-'}</td>
+                                <td class="py-4 px-5">
+                                    <span class="text-xs px-2.5 py-1 rounded-full font-semibold ${badgeColor}">
+                                        ${riskText}
+                                    </span>
+                                </td>
+                                <td class="py-4 px-5 text-xs text-slate-400 line-clamp-2 mt-3 block">${item.description || '無描述資訊'}</td>
+                                <td class="py-4 px-5 font-mono text-xs text-slate-400">${item.date_updated ? item.date_updated.substring(0,10) : '-'}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                })
+                .catch(err => {
+                    console.error(err);
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="py-12 text-center text-red-400">
+                                <i class="fa-solid fa-triangle-exclamation text-xl mb-2 block"></i>
+                                資料載入失敗，請確認後端 Python 伺服器狀態。
+                            </td>
+                        </tr>
+                    `;
+                });
+        }
+
+        // 初始化網頁時自動讀取一次數據
+        window.onload = triggerSearch;
+
+        // 當頂部全域搜尋欄打字時，自動觸發即時搜尋（帶防抖優化機制）
+        let debounceTimer;
+        document.getElementById('topKeyword').addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(triggerSearch, 400);
+        });
+    </script>
+</body>
+</html>
