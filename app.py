@@ -4,7 +4,7 @@ from flask import Flask, jsonify, request, send_from_directory
 
 app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, './cve_system.db')
+DB_PATH = os.path.join(BASE_DIR, './build/cve_system.db')
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -18,6 +18,10 @@ def get_db_connection():
 @app.route('/')
 def index():
     return send_from_directory('.', 'index.html')
+
+@app.route('/cve-dashboard')
+def cve_dashboard_page():
+    return send_from_directory('.', 'cve.html')
 
 @app.route('/cve-list')
 def cve_list_page():

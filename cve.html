@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>資安風險客服系統 - 儀表板</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen font-sans">
+
+<nav class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center shadow-md">
+    <div class="flex items-center space-x-3">
+        <span class="text-2xl font-bold text-blue-500 flex items-center gap-2">🛡️ 資安風險客服系統 <span class="text-xs bg-blue-900 text-blue-300 font-normal px-2 py-0.5 rounded border border-blue-700">控制台</span></span>
+    </div>
+    <div class="flex items-center space-x-4">
+        <a href="/cve-list" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-medium transition shadow-lg flex items-center gap-2">
+            📋 CVE清單
+        </a>
+    </div>
+</nav>
+
+<main class="max-w-7xl mx-auto p-6">
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-2">
+
+        <div class="lg:col-span-1 bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl flex flex-col items-center">
+            <h2 class="text-lg font-bold text-left w-full border-b border-gray-700 pb-3 mb-6 text-gray-200 flex items-center gap-2">
+                <span>📊</span> 風險等級分佈
+            </h2>
+            <div class="w-60 h-60 relative">
+                <canvas id="statsChart"></canvas>
+            </div>
+            <div id="chartLabels" class="grid grid-cols-2 gap-3 mt-8 w-full text-xs text-gray-300">
+            </div>
+        </div>
+
+        <div class="lg:col-span-2 bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-center border-b border-gray-700 pb-3 mb-4">
+                    <h2 class="text-lg font-bold text-gray-200 flex items-center gap-2">
+                        <span>🔥</span> 最新更新漏洞 (Top 5)
+                    </h2>
+                    <span class="text-xs text-gray-400 font-mono animate-pulse flex items-center gap-1">
+                            <span class="w-2 h-2 bg-emerald-500 rounded-full"></span> 即時同步中
+                        </span>
+                </div>
+
+                <div id="latestUpdatesContainer" class="divide-y divide-gray-700/60">
+                    <p class="text-gray-500 text-center py-12">漏洞加載中...</p>
+                </div>
+            </div>
+
+            <div class="pt-4 text-right">
+                <a href="/cve-list" class="text-xs text-blue-400 hover:text-blue-300 font-medium transition inline-flex items-center gap-1">
+                    檢視全部漏洞與進階搜尋 &rarr;
+                </a>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<script>
+    // 1. 初始化風險比率圓餅圖
+    async function loadStats() {
+        try {
+            const res = await fetch('/api/stats');
+            const data = await res.json();
+
+            const ctx = document.getElementById('statsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Critical', 'High', 'Medium', 'Low', 'None', 'Unknown'],
+                    datasets: [{
+                        data: [data.critical, data.high, data.medium, data.low, data.none_risk, data.unknown],
+                        backgroundColor: ['#ef4444', '#f97316', '#eab308', '#3b82f6', '#10b981', '#6b7280'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    cutout: '72%'
+                }
+            });
+
+            document.getElementById('chartLabels').innerHTML = `
+                    <div class="flex items-center gap-2 bg-gray-900/40 p-2 rounded-lg border border-gray-700/50"><span class="w-2.5 h-2.5 bg-red-500 rounded-full"></span> Critical: <strong>${data.critical.toLocaleString()}</strong></div>
+                    <div class="flex items-center gap-2 bg-gray-900/40 p-2 rounded-lg border border-gray-700/50"><span class="w-2.5 h-2.5 bg-orange-500 rounded-full"></span> High: <strong>${data.high.toLocaleString()}</strong></div>
+                    <div class="flex items-center gap-2 bg-gray-900/40 p-2 rounded-lg border border-gray-700/50"><span class="w-2.5 h-2.5 bg-yellow-500 rounded-full"></span> Medium: <strong>${data.medium.toLocaleString()}</strong></div>
+                    <div class="flex items-center gap-2 bg-gray-900/40 p-2 rounded-lg border border-gray-700/50"><span class="w-2.5 h-2.5 bg-blue-500 rounded-full"></span> Low: <strong>${data.low.toLocaleString()}</strong></div>
+                    <div class="flex items-center gap-2 bg-gray-900/40 p-2 rounded-lg border border-gray-700/50"><span class="w-2.5 h-2.5 bg-emerald-500 rounded-full"></span> None: <strong>${data.none_risk.toLocaleString()}</strong></div>
+                    <div class="flex items-center gap-2 bg-gray-900/40 p-2 rounded-lg border border-gray-700/50"><span class="w-2.5 h-2.5 bg-gray-500 rounded-full"></span> Unknown: <strong>${data.unknown.toLocaleString()}</strong></div>
+                `;
+        } catch (err) {
+            console.error("載入統計失敗:", err);
+        }
+    }
+
+    // 2. 載入最新更新的五筆漏洞資料
+    async function loadLatestUpdates() {
+        const container = document.getElementById('latestUpdatesContainer');
+        try {
+            const res = await fetch('/api/latest-updates');
+            const list = await res.json();
+
+            if (list.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-12">資料庫尚無更新資料。</p>';
+                return;
+            }
+
+            container.innerHTML = list.map(item => {
+                // 提取最高優先順序的風險值
+                let score = item.cvssV4_0_score || item.cvssV3_score || item.cvssV2_score || '無分數';
+
+                // 根據風險值動態給予標籤顏色
+                let badgeClass = 'bg-gray-700 text-gray-300';
+                if (score !== '無分數') {
+                    if (score >= 9.0) badgeClass = 'bg-red-500/10 text-red-400 border border-red-500/30';
+                    else if (score >= 7.0) badgeClass = 'bg-orange-500/10 text-orange-400 border border-orange-500/30';
+                    else if (score >= 4.0) badgeClass = 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/30';
+                    else badgeClass = 'bg-blue-500/10 text-blue-400 border border-blue-500/30';
+                }
+
+                return `
+                        <div class="py-3.5 flex items-center justify-between transition hover:bg-gray-700/20 px-2 rounded-xl">
+                            <div class="space-y-1.5">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="text-base font-bold font-mono text-blue-400">${item.cve_id}</span>
+                                    <span class="text-[10px] bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded">${item.assigner_short_name || 'CNA'}</span>
+                                </div>
+                                <div class="text-xs text-gray-400 flex items-center gap-1">
+                                    <span>🕒 更新時間:</span>
+                                    <span class="font-mono">${item.date_updated || '未註記'}</span>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-[10px] text-gray-500 mb-0.5 font-medium">CVSS 評分</div>
+                                <span class="px-3 py-1 rounded-lg text-xs font-extrabold border ${badgeClass}">
+                                    ${score}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+            }).join('');
+        } catch (err) {
+            container.innerHTML = `<p class="text-red-400 text-center py-12">最新更新載入失敗: ${err}</p>`;
+        }
+    }
+
+    // 頁面載入時自動執行
+    window.onload = () => {
+        loadStats();
+        loadLatestUpdates();
+    };
+</script>
+</body>
+</html>

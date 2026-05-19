@@ -2,158 +2,258 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>資安風險客服系統 - 儀表板</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>AI 五合一效能監控與智能助理</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f6f9; color: #333; margin: 0; padding: 20px; overflow-x: hidden; }
+        .container { max-width: 1100px; margin: 0 auto; padding-bottom: 50px; transition: margin-right 0.3s ease; }
+        .header { text-align: center; margin-bottom: 25px; }
+
+        /* 🚀 新增：頁面導覽按鈕區樣式 */
+        .nav-controls { display: flex; justify-content: center; gap: 12px; margin-top: 15px; margin-bottom: 5px; }
+        .nav-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            background-color: #ffffff; color: #4a5568; font-weight: 600; font-size: 14px;
+            padding: 10px 18px; border-radius: 10px; border: 1px solid #e2e8f0;
+            text-decoration: none; box-shadow: 0 2px 4px rgba(0,0,0,0.04); transition: all 0.2s ease;
+        }
+        .nav-btn:hover { background-color: #edf2f7; color: #1a202c; transform: translateY(-1px); }
+        .nav-btn.active { background-color: #2b5a9e; color: white; border-color: #2b5a9e; }
+
+        .dashboard { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .card { flex: 1; min-width: 180px; background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; }
+        .card h3 { margin: 0; color: #666; font-size: 14px; }
+        .card .value { font-size: 28px; font-weight: bold; margin: 8px 0; }
+
+        .cpu-color { color: #36A2EB; }
+        .ram-color { color: #FF6384; }
+        .disk-color { color: #FFCE56; }
+        .diskspeed-color { color: #4BC0C0; }
+        .net-color { color: #9966FF; }
+
+        .chart-container { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; height: 350px; }
+        .alert-box { display: none; background: #fff5f5; border-left: 5px solid #ff4d4d; border-radius: 8px; padding: 15px 20px; box-shadow: 0 4px 12px rgba(255, 77, 77, 0.15); margin-bottom: 20px; }
+        .alert-title { color: #ff4d4d; font-weight: bold; margin: 0 0 5px 0; }
+
+        /* ================= 🛠️ 側邊抽屜式聊天視窗 CSS ================= */
+        .chat-sidebar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 360px;
+            height: 100vh;
+            background: white;
+            box-shadow: -4px 0 24px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            transform: translateX(360px);
+            transition: transform 0.3s cubic-bezier(0.1, 0.9, 0.2, 1);
+        }
+
+        .chat-sidebar.open { transform: translateX(0); }
+
+        .toggle-arrow-btn {
+            position: absolute;
+            left: -40px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 70px;
+            background: #2b5a9e;
+            color: white;
+            border: none;
+            border-radius: 12px 0 0 12px;
+            cursor: pointer;
+            box-shadow: -4px 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            outline: none;
+        }
+
+        .toggle-arrow-btn span { display: inline-block; transition: transform 0.3s ease; }
+        .chat-sidebar.open .toggle-arrow-btn span { transform: rotate(180deg); }
+
+        .chat-header { background: #2b5a9e; color: white; padding: 18px 15px; font-weight: bold; font-size: 16px; }
+        .chat-body { flex: 1; padding: 15px; overflow-y: auto; background: #fcfcfc; display: flex; flex-direction: column; gap: 10px; }
+        .chat-message { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; }
+        .chat-message.bot { background: #eef2f7; color: #333; align-self: flex-start; border-top-left-radius: 0; }
+        .chat-message.user { background: #2b5a9e; color: white; align-self: flex-end; border-top-right-radius: 0; }
+        .chat-input-area { border-top: 1px solid #eee; padding: 15px 10px; display: flex; gap: 8px; background: white; }
+        .chat-input-area input { flex: 1; border: 1px solid #ccc; border-radius: 20px; padding: 8px 15px; outline: none; font-size: 14px; }
+        .chat-input-area button { background: #2b5a9e; color: white; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen font-sans">
+<body>
 
-    <nav class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center shadow-md">
-        <div class="flex items-center space-x-3">
-            <span class="text-2xl font-bold text-blue-500 flex items-center gap-2">🛡️ 資安風險客服系統 <span class="text-xs bg-blue-900 text-blue-300 font-normal px-2 py-0.5 rounded border border-blue-700">控制台</span></span>
+<div class="container" id="main-container">
+    <div class="header">
+        <h1>💻 AI 五合一系統健康狀態監控</h1>
+        <p>狀態：<span id="connection-status" style="color: green; font-weight: bold;">連線中...</span></p>
+
+        <div class="nav-controls">
+            <a href="/" class="nav-btn active">💻 系統監控主頁</a>
+            <a href="/cve-dashboard" class="nav-btn">🛡️ CVE 儀表板</a>
+            <a href="/cve-list" class="nav-btn">📋 CVE 漏洞清單</a>
         </div>
-        <div class="flex items-center space-x-4">
-            <a href="/cve-list" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-medium transition shadow-lg flex items-center gap-2">
-                📋 CVE清單
-            </a>
-        </div>
-    </nav>
+    </div>
 
-    <main class="max-w-7xl mx-auto p-6">
-        
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-2">
-            
-            <div class="lg:col-span-1 bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl flex flex-col items-center">
-                <h2 class="text-lg font-bold text-left w-full border-b border-gray-700 pb-3 mb-6 text-gray-200 flex items-center gap-2">
-                    <span>📊</span> 風險等級分佈
-                </h2>
-                <div class="w-60 h-60 relative">
-                    <canvas id="statsChart"></canvas>
-                </div>
-                <div id="chartLabels" class="grid grid-cols-2 gap-3 mt-8 w-full text-xs text-gray-300">
-                    </div>
-            </div>
+    <div class="dashboard">
+        <div class="card"><h3>CPU 使用率</h3><div id="cpu-val" class="value cpu-color">0%</div></div>
+        <div class="card"><h3>記憶體使用率</h3><div id="ram-val" class="value ram-color">0%</div></div>
+        <div class="card"><h3>磁碟使用率</h3><div id="disk-val" class="value disk-color">0%</div></div>
+        <div class="card"><h3>磁碟速度</h3><div id="diskspeed-val" class="value diskspeed-color">0 MB/s</div></div>
+        <div class="card"><h3>網路速度</h3><div id="net-val" class="value net-color">0 MB/s</div></div>
+    </div>
 
-            <div class="lg:col-span-2 bg-gray-800 p-6 rounded-2xl border border-gray-700 shadow-xl flex flex-col justify-between">
-                <div>
-                    <div class="flex justify-between items-center border-b border-gray-700 pb-3 mb-4">
-                        <h2 class="text-lg font-bold text-gray-200 flex items-center gap-2">
-                            <span>🔥</span> 最新更新漏洞 (Top 5)
-                        </h2>
-                        <span class="text-xs text-gray-400 font-mono animate-pulse flex items-center gap-1">
-                            <span class="w-2 h-2 bg-emerald-500 rounded-full"></span> 即時同步中
-                        </span>
-                    </div>
-                    
-                    <div id="latestUpdatesContainer" class="divide-y divide-gray-700/60">
-                        <p class="text-gray-500 text-center py-12">漏洞加載中...</p>
-                    </div>
-                </div>
-                
-                <div class="pt-4 text-right">
-                    <a href="/cve-list" class="text-xs text-blue-400 hover:text-blue-300 font-medium transition inline-flex items-center gap-1">
-                        檢視全部漏洞與進階搜尋 &rarr;
-                    </a>
-                </div>
-            </div>
+    <div class="chart-container"><canvas id="realtimeChart"></canvas></div>
 
-        </div>
-    </main>
+    <div id="alert-box" class="alert-box">
+        <h4 class="alert-title">🤖 AI 系統主動提醒：</h4>
+        <p id="alert-text"></p>
+    </div>
+</div>
 
-    <script>
-        // 1. 初始化風險比率圓餅圖
-        async function loadStats() {
-            try {
-                const res = await fetch('/api/stats');
-                const data = await res.json();
-                
-                const ctx = document.getElementById('statsChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Critical', 'High', 'Medium', 'Low', 'None', 'Unknown'],
-                        datasets: [{
-                            data: [data.critical, data.high, data.medium, data.low, data.none_risk, data.unknown],
-                            backgroundColor: ['#ef4444', '#f97316', '#eab308', '#3b82f6', '#10b981', '#6b7280'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        plugins: { legend: { display: false } },
-                        cutout: '72%'
-                    }
-                });
+<div id="chat-sidebar" class="chat-sidebar">
+    <button class="toggle-arrow-btn" onclick="toggleSidebar()">
+        <span id="arrow-icon">◀</span>
+    </button>
 
-                document.getElementById('chartLabels').innerHTML = `
-                    <div class="flex items-center gap-2 bg-gray-900/40 p-2 rounded-lg border border-gray-700/50"><span class="w-2.5 h-2.5 bg-red-500 rounded-full"></span> Critical: <strong>${data.critical.toLocaleString()}</strong></div>
-                    <div class="flex items-center gap-2 bg-gray-900/40 p-2 rounded-lg border border-gray-700/50"><span class="w-2.5 h-2.5 bg-orange-500 rounded-full"></span> High: <strong>${data.high.toLocaleString()}</strong></div>
-                    <div class="flex items-center gap-2 bg-gray-900/40 p-2 rounded-lg border border-gray-700/50"><span class="w-2.5 h-2.5 bg-yellow-500 rounded-full"></span> Medium: <strong>${data.medium.toLocaleString()}</strong></div>
-                    <div class="flex items-center gap-2 bg-gray-900/40 p-2 rounded-lg border border-gray-700/50"><span class="w-2.5 h-2.5 bg-blue-500 rounded-full"></span> Low: <strong>${data.low.toLocaleString()}</strong></div>
-                    <div class="flex items-center gap-2 bg-gray-900/40 p-2 rounded-lg border border-gray-700/50"><span class="w-2.5 h-2.5 bg-emerald-500 rounded-full"></span> None: <strong>${data.none_risk.toLocaleString()}</strong></div>
-                    <div class="flex items-center gap-2 bg-gray-900/40 p-2 rounded-lg border border-gray-700/50"><span class="w-2.5 h-2.5 bg-gray-500 rounded-full"></span> Unknown: <strong>${data.unknown.toLocaleString()}</strong></div>
-                `;
-            } catch (err) {
-                console.error("載入統計失敗:", err);
-            }
+    <div class="chat-header">🤖 電腦健康隨身特助</div>
+    <div id="chat-body" class="chat-body">
+        <div class="chat-message bot">嗨！我是你的電腦管家。看著左邊的圖表如果有任何看不懂的地方，像是「網路速度這樣算快嗎？」都可以隨時問我喔！😊</div>
+    </div>
+    <div class="chat-input-area">
+        <input type="text" id="user-input" placeholder="問問電腦現在的狀況..." onkeypress="handleKeyPress(event)">
+        <button onclick="sendMessage()">➔</button>
+    </div>
+</div>
+
+<script>
+    // 側邊欄開關控制邏輯
+    function toggleSidebar() {
+        const sidebar = document.getElementById("chat-sidebar");
+        const container = document.getElementById("main-container");
+
+        sidebar.classList.toggle("open");
+
+        if (sidebar.classList.contains("open")) {
+            container.style.marginRight = "380px";
+        } else {
+            container.style.marginRight = "auto";
         }
+    }
 
-        // 2. 載入最新更新的五筆漏洞資料
-        async function loadLatestUpdates() {
-            const container = document.getElementById('latestUpdatesContainer');
-            try {
-                const res = await fetch('/api/latest-updates');
-                const list = await res.json();
-                
-                if (list.length === 0) {
-                    container.innerHTML = '<p class="text-gray-500 text-center py-12">資料庫尚無更新資料。</p>';
-                    return;
-                }
+    const ctx = document.getElementById('realtimeChart').getContext('2d');
+    const maxDataPoints = 30;
+    const labels = Array(maxDataPoints).fill('');
+    const d_cpu = Array(maxDataPoints).fill(0), d_ram = Array(maxDataPoints).fill(0), d_disk = Array(maxDataPoints).fill(0), d_diskspeed = Array(maxDataPoints).fill(0), d_net = Array(maxDataPoints).fill(0);
 
-                container.innerHTML = list.map(item => {
-                    // 提取最高優先順序的風險值
-                    let score = item.cvssV4_0_score || item.cvssV3_score || item.cvssV2_score || '無分數';
-                    
-                    // 根據風險值動態給予標籤顏色
-                    let badgeClass = 'bg-gray-700 text-gray-300';
-                    if (score !== '無分數') {
-                        if (score >= 9.0) badgeClass = 'bg-red-500/10 text-red-400 border border-red-500/30';
-                        else if (score >= 7.0) badgeClass = 'bg-orange-500/10 text-orange-400 border border-orange-500/30';
-                        else if (score >= 4.0) badgeClass = 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/30';
-                        else badgeClass = 'bg-blue-500/10 text-blue-400 border border-blue-500/30';
-                    }
+    const realtimeChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'CPU (%)', data: d_cpu, borderColor: '#36A2EB', pointRadius: 0, borderWidth: 2, tension: 0.2 },
+                { label: '記憶體 (%)', data: d_ram, borderColor: '#FF6384', pointRadius: 0, borderWidth: 2, tension: 0.2 },
+                { label: '磁碟使用 (%)', data: d_disk, borderColor: '#FFCE56', pointRadius: 0, borderWidth: 2, tension: 0.2 },
+                { label: '磁碟速度 (MB/s)', data: d_diskspeed, borderColor: '#4BC0C0', pointRadius: 0, borderWidth: 2, tension: 0.2 },
+                { label: '網路速度 (MB/s)', data: d_net, borderColor: '#9966FF', pointRadius: 0, borderWidth: 2, tension: 0.2 }
+            ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
 
-                    return `
-                        <div class="py-3.5 flex items-center justify-between transition hover:bg-gray-700/20 px-2 rounded-xl">
-                            <div class="space-y-1.5">
-                                <div class="flex items-center gap-2.5">
-                                    <span class="text-base font-bold font-mono text-blue-400">${item.cve_id}</span>
-                                    <span class="text-[10px] bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded">${item.assigner_short_name || 'CNA'}</span>
-                                </div>
-                                <div class="text-xs text-gray-400 flex items-center gap-1">
-                                    <span>🕒 更新時間:</span>
-                                    <span class="font-mono">${item.date_updated || '未註記'}</span>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-[10px] text-gray-500 mb-0.5 font-medium">CVSS 評分</div>
-                                <span class="px-3 py-1 rounded-lg text-xs font-extrabold border ${badgeClass}">
-                                    ${score}
-                                </span>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            } catch (err) {
-                container.innerHTML = `<p class="text-red-400 text-center py-12">最新更新載入失敗: ${err}</p>`;
-            }
+    let currentMetrics = { cpu: 0, ram: 0, disk: 0, disk_speed: 0, net_speed: 0 };
+    const ws = new WebSocket("ws://127.0.0.1:8000/ws/system-monitor");
+
+    ws.onopen = function() {
+        document.getElementById("connection-status").innerText = "已連線";
+        document.getElementById("connection-status").style.color = "green";
+    };
+
+    ws.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        currentMetrics = { cpu: data.cpu, ram: data.ram, disk: data.disk, disk_speed: data.disk_speed, net_speed: data.net_speed };
+
+        document.getElementById("cpu-val").innerText = data.cpu + "%";
+        document.getElementById("ram-val").innerText = data.ram + "%";
+        document.getElementById("disk-val").innerText = data.disk + "%";
+        document.getElementById("diskspeed-val").innerText = data.disk_speed + " MB/s";
+        document.getElementById("net-val").innerText = data.net_speed + " MB/s";
+
+        realtimeChart.data.datasets[0].data.shift(); realtimeChart.data.datasets[0].data.push(data.cpu);
+        realtimeChart.data.datasets[1].data.shift(); realtimeChart.data.datasets[1].data.push(data.ram);
+        realtimeChart.data.datasets[2].data.shift(); realtimeChart.data.datasets[2].data.push(data.disk);
+        realtimeChart.data.datasets[3].data.shift(); realtimeChart.data.datasets[3].data.push(data.disk_speed);
+        realtimeChart.data.datasets[4].data.shift(); realtimeChart.data.datasets[4].data.push(data.net_speed);
+        realtimeChart.update('none');
+
+        const alertBox = document.getElementById("alert-box");
+        if (data.is_abnormal && data.alert_message !== "") {
+            alertBox.style.display = "block";
+            document.getElementById("alert-text").innerText = data.alert_message;
+        } else if (!data.is_abnormal) {
+            alertBox.style.display = "none";
         }
+    };
 
-        // 頁面載入時自動執行
-        window.onload = () => {
-            loadStats();
-            loadLatestUpdates();
-        };
-    </script>
+    function sendMessage() {
+        const input = document.getElementById("user-input");
+        const messageText = input.value.trim();
+        if (messageText === "") return;
+
+        appendMessage(messageText, "user");
+        input.value = "";
+
+        const chatBody = document.getElementById("chat-body");
+        const loadingDiv = document.createElement("div");
+        loadingDiv.id = "ai-loading";
+        loadingDiv.className = "chat-message bot";
+        loadingDiv.innerText = "思考中...";
+        chatBody.appendChild(loadingDiv);
+        chatBody.scrollTop = chatBody.scrollHeight;
+
+        const combinedMessage = `【當前電腦即時狀況】CPU:${currentMetrics.cpu}%, 記憶體:${currentMetrics.ram}%, 磁碟:${currentMetrics.disk}%, 磁碟速度:${currentMetrics.disk_speed}MB/s, 網路速度:${currentMetrics.net_speed}MB/s。\n使用者問：${messageText}`;
+
+        fetch("http://127.0.0.1:8000/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                cve_id: "CVE-2026-1234",
+                user_message: combinedMessage
+            })
+        })
+            .then(res => res.json())
+            .then(data => {
+                const loadingElement = document.getElementById("ai-loading");
+                if (loadingElement) loadingElement.remove();
+                appendMessage(data.bot_response, "bot");
+            })
+            .catch(err => {
+                const loadingElement = document.getElementById("ai-loading");
+                if (loadingElement) loadingElement.remove();
+                appendMessage("哎呀，我跟大腦連線失敗了，請確認 Ollama 有開啟喔！", "bot");
+            });
+    }
+
+    function appendMessage(text, sender) {
+        const chatBody = document.getElementById("chat-body");
+        const messageDiv = document.createElement("div");
+        const msgId = "msg-" + Date.now();
+        messageDiv.id = msgId;
+        messageDiv.className = `chat-message ${sender}`;
+        messageDiv.innerText = text;
+        chatBody.appendChild(messageDiv);
+        chatBody.scrollTop = chatBody.scrollHeight;
+        return msgId;
+    }
+
+    function handleKeyPress(event) {
+        if (event.key === "Enter") sendMessage();
+    }
+</script>
 </body>
 </html>
